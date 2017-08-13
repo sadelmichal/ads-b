@@ -1,4 +1,4 @@
-package com.michalsadel.signalprocessing;
+package com.michalsadel.obsolete;
 
 import com.google.common.primitives.*;
 import org.jfree.chart.*;
@@ -16,7 +16,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 import java.util.stream.*;
 
-public class Adsb implements PreambleObserver {
+public final class Adsb {
     private static final Logger log = LoggerFactory.getLogger(Adsb.class);
     private final AtomicInteger index = new AtomicInteger();
 
@@ -40,7 +40,7 @@ public class Adsb implements PreambleObserver {
         theme.setAxisOffset(new RectangleInsets(0, 0, 0, 0));
         theme.setBarPainter(new StandardBarPainter());
         theme.setAxisLabelPaint(Color.decode("#666666"));
-        Path rootPath = Paths.get("plot/");
+        Path rootPath = Paths.get("build/plot/");
         try {
             Files.walk(rootPath, FileVisitOption.FOLLOW_LINKS)
                     .sorted(Comparator.reverseOrder())
@@ -50,17 +50,17 @@ public class Adsb implements PreambleObserver {
         }
     }
 
-    @Override
+    //@Override
     public void detected(float[] samples) {
 //        log.info("Detected: at {}, {}", atomicInteger.incrementAndGet(), samples);
         log.info("Detected at {} : {}", index.get(), samples);
         //generatePlot(samples, "plot/preamble");
     }
 
-    public void generatePlot(float[] samples, String prefix, int next, int index, String message) {
-        if (!Files.exists(Paths.get("plot"))) {
+    public void generatePlot(float[] samples, String name, String message) {
+        if (!Files.exists(Paths.get("build/plot"))) {
             try {
-                Files.createDirectory(Paths.get("plot"));
+                Files.createDirectory(Paths.get("build/plot"));
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -75,7 +75,7 @@ public class Adsb implements PreambleObserver {
         final double[] my = Doubles.toArray(Floats.asList(samples).subList(16, samples.length));
         xyDataset.addSeries("Samples1", new double[][]{mx, my});
         XYBarDataset dataset = new XYBarDataset(xyDataset, 0.75);
-        JFreeChart chart = ChartFactory.createXYBarChart("Signal at " + (index - 112 * 2 + 1), "message: " + message, false, "amplitude", dataset, PlotOrientation.VERTICAL, false, false, false);
+        JFreeChart chart = ChartFactory.createXYBarChart("Signal", message, false, "amplitude", dataset, PlotOrientation.VERTICAL, false, false, false);
         theme.apply(chart);
         final XYPlot plot = chart.getXYPlot();
         plot.setOutlineVisible(false);
@@ -93,7 +93,7 @@ public class Adsb implements PreambleObserver {
         renderer.setSeriesPaint(1, Color.decode("#708FA3"));
         renderer.setSeriesPaint(0, Color.decode("#FFAAAA"));
         try {
-            try (FileOutputStream fos = new FileOutputStream(prefix + next + ".png")) {
+            try (FileOutputStream fos = new FileOutputStream(name + ".png")) {
                 ChartUtilities.writeChartAsPNG(fos, chart, 1280, 300);
             }
         } catch (IOException e) {

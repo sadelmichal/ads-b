@@ -5,12 +5,6 @@ import com.michalsadel.signalprocessing.*;
 public class AdsbDetectorsFactory extends DetectorsFactory {
     @Override
     public Detector[] detectors() {
-        return new Detector[]{new SizeDetector(minDetectorSampleSize()), new CorrelationDetector(), new SignalToNoiseRatioDetector(),
-                new NoSignalDetector(), new SimilarSignalDifferenceDetector()};
-    }
-
-    @Override
-    public int minDetectorSampleSize() {
-        return 16;
+        return new Detector[]{new CorrelationDetector(), new SignalToNoiseRatioDetector(), new NoSignalDetector(), new SimilarSignalDifferenceDetector()};
     }
 }

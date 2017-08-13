@@ -3,23 +3,35 @@ package com.michalsadel.signalprocessing;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.runners.*;
-import org.mockito.*;
 
 import java.util.*;
+import java.util.concurrent.atomic.*;
 
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.when;
 
 @RunWith(BlockJUnit4ClassRunner.class)
 public class PreambleTest {
     @Test
-    public void addingMagnitudeToPreambleShouldShiftLeftValuesWhenDefaultCapacityIsOverflown() throws Exception {
-        final DetectorsFactory mock = Mockito.mock(DetectorsFactory.class);
-        when(mock.minDetectorSampleSize()).thenReturn(11);
-        final Preamble preamble = new Preamble(mock);
-        for (int i = 0; i < preamble.getPreambleSize() + 1; i++) {
-            preamble.add(i);
-        }
-        assertEquals(Arrays.asList(11f, 10f, 9f, 8f, 7f, 6f, 5f, 4f, 3f, 2f), preamble.getBuffer());
+    public void preambleDetect_MultipleObserversNotification_ShouldHaveTheSameDetectionId() throws Exception {
+        AtomicInteger atomicInteger = new AtomicInteger();
+        List<String> detectedIds = new ArrayList<>();
+        final Preamble preamble = new Preamble(new DetectorsFactory() {
+            @Override
+            public Detector[] detectors() {
+                return new Detector[]{samples -> true};
+            }
+        }, 1);
+        preamble.attach((samples, detectionId) -> {
+            atomicInteger.incrementAndGet();
+            detectedIds.add(detectionId);
+        });
+        preamble.attach((samples, detectionId) -> {
+            atomicInteger.incrementAndGet();
+            detectedIds.add(detectionId);
+        });
+        preamble.add(1);
+        assertEquals(2, atomicInteger.get());
+        assertEquals(2, detectedIds.size());
+        assertEquals(1, detectedIds.stream().distinct().limit(2).count());
     }
 }

@@ -1,41 +1,25 @@
 package com.michalsadel.signalprocessing;
 
-import com.google.common.primitives.*;
-import org.slf4j.*;
+import com.michalsadel.commons.*;
 
 import java.util.*;
 
-//remove public wherever you can
-public final class Preamble {
-    private static final Logger log = LoggerFactory.getLogger(Preamble.class);
-    private final int preambleSize;
-    private final Set<PreambleObserver> observers = new HashSet<>();
-    private final List<Float> buffer;
+final class Preamble {
+    private final LeftShiftedBuffer buffer;
     private final Detector[] detectors;
+    private final GeneralObservable<SampleObserver> sampleObservable = new GeneralObservable<>();
 
-
-    public Preamble(DetectorsFactory detectorsFactory) {
-        assert detectorsFactory != null;
-        this.preambleSize = detectorsFactory.minDetectorSampleSize();
-        this.buffer = new ArrayList<>(this.preambleSize);
+    public Preamble(DetectorsFactory detectorsFactory, int preambleSize) {
+        if (detectorsFactory == null) {
+            throw new IllegalArgumentException();
+        }
+        this.buffer = new LeftShiftedBuffer(preambleSize);
         this.detectors = detectorsFactory.detectors();
-    }
-
-    List<Float> getBuffer() {
-        return Collections.unmodifiableList(buffer);
-    }
-
-    int getPreambleSize() {
-        return preambleSize;
     }
 
     public void add(float magnitude) {
         buffer.add(magnitude);
-        final float[] samples = Floats.toArray(buffer);
-        if (buffer.size() == preambleSize) {
-            buffer.remove(0);
-        }
-        detect(samples);
+        detect(buffer.getBuffer());
     }
 
     private void detect(float[] samples) {
@@ -44,17 +28,19 @@ public final class Preamble {
         }
         boolean detected = detectors.length > 0;
         for (Detector detector : detectors) {
+            //check inspections
             detected &= detector.isCorrect(samples);
             if (!detected) {
                 return;
             }
         }
         if (detected) {
-            observers.forEach(x -> x.detected(samples));
+            final String detectionId = UUID.randomUUID().toString();
+            sampleObservable.getObservers().forEach(x -> x.detected(samples, detectionId));
         }
     }
 
-    public void attach(PreambleObserver preambleObserver) {
-        observers.add(preambleObserver);
+    public void attach(SampleObserver observer) {
+        sampleObservable.attach(observer);
     }
 }
