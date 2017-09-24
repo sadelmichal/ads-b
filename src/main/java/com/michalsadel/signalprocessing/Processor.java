@@ -9,15 +9,25 @@ public final class Processor {
     private Preamble preamble;
     private Payload payload;
 
-    private void start() throws IOException {
-        try (final MagnitudeDataInput mg = magnitudeDataInput) {
-            preamble.attach(payload);
-            float magnitude;
-            while ((magnitude = mg.readMagnitude()) != -1) {
-                payload.add(magnitude);
-                preamble.add(magnitude);
+    private void start(Test test) throws IOException {
+//        final ExecutorService executorService = Executors.newSingleThreadExecutor();
+//        executorService.submit(() -> {
+            try {
+                try (final MagnitudeDataInput mg = magnitudeDataInput) {
+                    preamble.attach(payload);
+                    float magnitude;
+                    while ((magnitude = mg.readMagnitude()) != -1) {
+                        if (test != null) {
+                            test.test(magnitude);
+                        }
+                        payload.add(magnitude);
+                        preamble.add(magnitude);
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        }
+//        });
     }
 
     private Processor() {
@@ -27,15 +37,20 @@ public final class Processor {
         return new Builder(magnitudeDataInput);
     }
 
-    interface DetectorSpec {
+    public interface DetectorSpec {
         PayloadDecoderSpec preambleDetectionUsing(DetectorsFactory detectorsFactory, int size);
     }
 
-    interface PayloadDecoderSpec {
+    public interface PayloadDecoderSpec {
         BuildSpec payloadDecodeUsing(PayloadDecoder payloadDecoder);
     }
 
-    interface BuildSpec {
+    @FunctionalInterface
+    public interface Test {
+        void test(Float magnitude);
+    }
+
+    public interface BuildSpec {
         BuildSpec whenPreambleDetected(SampleObserver observer);
 
         BuildSpec whenPayloadDetected(SampleObserver observer);
@@ -43,6 +58,8 @@ public final class Processor {
         <T> BuildSpec whenPayloadDecoded(MessageObserver<T> observer);
 
         void process() throws IOException;
+
+        void process(Test test) throws IOException;
     }
 
     private static class Builder implements DetectorSpec, PayloadDecoderSpec, BuildSpec {
@@ -84,7 +101,12 @@ public final class Processor {
 
         @Override
         public void process() throws IOException {
-            processor.start();
+            processor.start(null);
+        }
+
+        @Override
+        public void process(Test test) throws IOException {
+            processor.start(test);
         }
 
     }

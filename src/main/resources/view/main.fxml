@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.chart.*?>
+<?import javafx.scene.layout.*?>
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="476.0" prefWidth="769.0" xmlns="http://javafx.com/javafx/8.0.121" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.michalsadel.app.controller.MainController">
+    <center>
+        <AnchorPane prefHeight="200.0" prefWidth="200.0" styleClass="chart" stylesheets="@../css/main.css" BorderPane.alignment="CENTER">
+            <children>
+                <BarChart fx:id="barChart" horizontalGridLinesVisible="false" horizontalZeroLineVisible="false" title="Signal" verticalGridLinesVisible="false" verticalZeroLineVisible="false" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
+                    <xAxis>
+                        <CategoryAxis side="BOTTOM" />
+                    </xAxis>
+                    <yAxis>
+                        <NumberAxis side="LEFT" />
+                    </yAxis>
+                </BarChart>
+            </children>
+        </AnchorPane>
+    </center>
+</BorderPane>

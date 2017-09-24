@@ -96,6 +96,11 @@ public final class Adsb {
             try (FileOutputStream fos = new FileOutputStream(name + ".png")) {
                 ChartUtilities.writeChartAsPNG(fos, chart, 1280, 300);
             }
+            try (PrintWriter p = new PrintWriter(new FileOutputStream(name + ".txt"))) {
+                for (float sample : samples) {
+                    p.write(sample + ",");
+                }
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -2,7 +2,7 @@ package com.michalsadel.signalprocessing;
 
 import com.google.common.io.*;
 import com.google.common.primitives.*;
-import com.michalsadel.obsolete.*;
+import com.michalsadel.decoder.*;
 import com.michalsadel.signalprocessing.adsb.*;
 import com.michalsadel.streams.*;
 import org.junit.*;
@@ -13,7 +13,9 @@ import org.slf4j.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
+import java.util.stream.*;
 
+import static java.util.Collections.*;
 import static org.junit.Assert.*;
 
 @RunWith(BlockJUnit4ClassRunner.class)
@@ -58,10 +60,11 @@ public class ProcessorTest {
     }
 
     @Test
-    @Ignore
+    //@Ignore
     public void fakeTest() throws Exception {
         final InputStream oneSample = Thread.currentThread().getContextClassLoader().getResourceAsStream("sample.bin");
         final Map<String, Result> map = new HashMap<>();
+        List<ModeSReplay> modeSReplays = new ArrayList<>();
         Processor
                 .from(new MagnitudeInputDataStream(new IQInputDataStream(oneSample)))
                 .preambleDetectionUsing(new AdsbDetectorsFactory(), 16)
@@ -77,15 +80,29 @@ public class ProcessorTest {
                 })
                 .<byte[]>whenPayloadDecoded((message, detectionId) -> {
                     final Result result = map.get(detectionId);
-                    result.decoded = BaseEncoding.base16().upperCase().encode(message);
-                    //log.info("Decoded {} : {}", detectionId, BaseEncoding.base16().upperCase().encode(message));
+                    map.put(detectionId, result);
+                    modeSReplays.add(new ModeSReplay(message));
                 })
                 .process();
-        final Adsb adsb = new Adsb();
-        for (Map.Entry<String, Result> stringResultEntry : map.entrySet()) {
-            adsb.generatePlot(Floats.concat(stringResultEntry.getValue().preamble, stringResultEntry.getValue().message),
-                    "build/plot/" + stringResultEntry.getKey(), stringResultEntry.getValue().decoded);
-        }
+
+        modeSReplays.stream()
+                .collect(Collectors.groupingBy(ModeSReplay::getDownlinkFormat, Collectors.counting()))
+                .entrySet().stream()
+                .sorted(reverseOrder(Map.Entry.comparingByValue()))
+                .forEach(en -> log.info("Message {} : {}", en.getKey(), en.getValue()));
+
+        //http://www.radartutorial.eu/13.ssr/sr24.en.html
+
+        //.forEach((downlink, count) -> log.info("Message {} : {}", downlink, count));
+
+        //log.info("Decoded {} : {}", detectionId, modeSReplay.toString());
+
+
+//        final Adsb adsb = new Adsb();
+//        for (Map.Entry<String, Result> stringResultEntry : map.entrySet()) {
+//            adsb.generatePlot(Floats.concat(stringResultEntry.getValue().preamble, stringResultEntry.getValue().message),
+//                    "build/plot/" + stringResultEntry.getKey(), stringResultEntry.getValue().decoded);
+//        }
     }
 
 }
